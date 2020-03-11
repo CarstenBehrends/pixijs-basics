@@ -1,6 +1,8 @@
 import { log } from "../../utils/dev/log";
 const _log = log(true, "ViewPixi");
 
+import { gsap } from "gsap";
+
 // import * as PIXI from "pixi.js-legacy";
 import * as PIXI from "pixi.js";
 //dat ui
@@ -12,11 +14,14 @@ import Size from "./../utils/Size";
 import * as EventBus from "../event/EventBus";
 //three.js imports
 import { HotSpot } from "./HotSpot";
+import { HotspotConnections } from "./HotspotConnections";
 
 export default class ViewPixi {
-  constructor(container) {
+  constructor(container, data) {
     this.container = container;
     this.size = new Size(this.container);
+
+    this.data = data;
 
     //https://pixijs.download/dev/docs/PIXI.Application.html
     this.app = new PIXI.Application({
@@ -33,36 +38,67 @@ export default class ViewPixi {
 
     this.container.appendChild(this.app.view);
 
-    this.hotspot = new HotSpot();
-    this.hotspot.init({
-      radius: 100,
-      stage: this.app.stage
+    this.connections = new HotspotConnections();
+    this.app.stage.addChild(this.connections);
+
+    // let hotspot = new HotSpot();
+    // hotspot.init({
+    //   radius: 100
+    // });
+
+    // this.app.stage.addChild(hotspot);
+    // hotspot.x = 500;
+    // hotspot.y = 100;
+
+    // hotspot.show();
+    // hotspot.hilite();
+
+    _log(this.size);
+    this.hotspots = [];
+
+    this.data.hotspots.forEach(hsdata => {
+      let hs = new HotSpot();
+      hs.name = hsdata.id;
+
+      hs.setStartPoint({ x: hsdata.x, y: hsdata.y });
+
+      hs.init({
+        radius: hsdata.radius,
+        connections: hsdata.connect,
+        info: hsdata.info
+      });
+      hs.resize(this.size);
+      this.hotspots.push(hs);
+
+      this.app.stage.addChild(hs);
+      hs.show();
     });
-    this.hotspot.x = 100;
-    this.hotspot.y = 100;
 
-    this.hotspot = new HotSpot();
-    this.hotspot.init({
-      radius: 100,
-      stage: this.app.stage
-    });
-    this.hotspot.x = 500;
-    this.hotspot.y = 100;
+    //hotspot event
 
-    this.hotspot.show();
-    this.hotspot.hilite();
-
-    // setTimeout(() => {
-    //   this.hotspot.dehilite();
-    // }, 2000);
-    // this.hotspot.pulsate();
-
-    this.setupHelper();
-
-    this.setupDebug();
+    this.connections.init(this.hotspots);
 
     //resize
     window.addEventListener("resize", this.resize.bind(this));
+  }
+
+  randomBetween(min, max) {
+    return Math.random() * max + min;
+  }
+
+  start() {
+    _log("START");
+    this.hotspots.forEach(hs => {
+      hs.start();
+    });
+    this.connections.start();
+  }
+
+  stop() {
+    this.hotspots.forEach(hs => {
+      hs.stop();
+    });
+    this.connections.stop();
   }
 
   setupHelper() {}
@@ -90,13 +126,9 @@ export default class ViewPixi {
 
   resize() {
     _log("resize");
-  }
 
-  start() {
-    this.rendering = true;
-  }
-
-  stop() {
-    this.rendering = false;
+    this.hotspots.forEach(hs => {
+      hs.resize(this.size);
+    });
   }
 }

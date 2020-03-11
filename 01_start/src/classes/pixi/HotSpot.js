@@ -1,16 +1,44 @@
 import { log } from "../../utils/dev/log";
-const _log = log(true, "HotSpot");
+const _log = log(false, "HotSpot");
 
 import * as PIXI from "pixi.js-legacy";
-import { DropShadowFilter } from "@pixi/filter-drop-shadow";
+import * as EventBus from "../event/EventBus";
 import { gsap } from "gsap";
 export class HotSpot extends PIXI.Container {
   init(params) {
-    this.stage = params.stage;
     this.radius = params.radius;
+    this.connections = params.connections;
+    this.info = params.info;
+    this.enabled = false;
 
-    this.stage.addChild(this);
+    this.overlayID = 0;
 
+    this.createCircles();
+    this.createStateTimelines();
+  }
+
+  setStartPoint(point) {
+    this.rawStartPoint = point;
+  }
+
+  resize(bounds) {
+    this.bounds = bounds;
+    this.startPoint = {
+      x: (this.rawStartPoint.x * this.bounds.width) / 100,
+      y: (this.rawStartPoint.y * this.bounds.height) / 100
+    };
+
+    gsap.killTweensOf(this);
+
+    this.updateStartPoint();
+    this.move();
+  }
+  updateStartPoint() {
+    this.x = this.startPoint.x;
+    this.y = this.startPoint.y;
+  }
+
+  createCircles() {
     this.innerCircles = new PIXI.Container();
 
     let circle1 = this.drawCircle({
@@ -65,8 +93,6 @@ export class HotSpot extends PIXI.Container {
 
     this.innerCircles.scale.x = this.innerCircles.scale.y = 0;
     this.outerCircles.scale.x = this.outerCircles.scale.y = 0;
-
-    this.createTimelines();
   }
 
   drawCircle(params) {
@@ -83,7 +109,7 @@ export class HotSpot extends PIXI.Container {
     return container;
   }
 
-  createTimelines() {
+  createStateTimelines() {
     this.showTl = gsap.timeline({
       paused: true
     });
@@ -133,6 +159,54 @@ export class HotSpot extends PIXI.Container {
       0
     );
   }
+  start() {
+    this.enabled = true;
+    this.move();
+  }
+  stop() {
+    this.enabled = false;
+    gsap.killTweensOf(this);
+  }
+
+  move() {
+    if (this.enabled) {
+      this.dehilite();
+
+      let duration = this.randomBetween(0.5, 3);
+      let destX = this.startPoint.x + this.randomBetween(-100, 110);
+      if (destX < 0 + this.radius) {
+        destX = this.radius;
+      }
+      let destY = this.startPoint.y + this.randomBetween(-100, 110);
+      if (destY < 0 + this.radius) {
+        destY = this.radius;
+      }
+
+      gsap.to(this, {
+        duration: duration,
+        x: destX,
+        y: destY,
+        onComplete: this.onMoveComplete.bind(this)
+      });
+    }
+  }
+
+  onMoveComplete() {
+    _log("moveComplete");
+
+    let showHighlite = this.randomBetween(0, 100);
+
+    if (showHighlite > 90 && this.info) {
+      this.hilite();
+      gsap.delayedCall(4, this.move.bind(this));
+    } else {
+      this.move();
+    }
+  }
+
+  randomBetween(min, max) {
+    return Math.random() * max + min;
+  }
 
   show() {
     this.showTl.play();
@@ -141,9 +215,13 @@ export class HotSpot extends PIXI.Container {
   hilite() {
     this.showOuterTl.play();
     this.pulsateTl.play();
+    // _log("hilite", this.x, this.y);
+
+    EventBus.publish("hotspot.found", this);
   }
 
   dehilite() {
+    EventBus.publish("hotspot.search", this);
     this.showOuterTl.reverse();
     this.pulsateTl.reverse();
   }
