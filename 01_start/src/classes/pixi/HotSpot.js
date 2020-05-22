@@ -25,7 +25,7 @@ export class HotSpot extends PIXI.Container {
     this.bounds = bounds;
     this.startPoint = {
       x: (this.rawStartPoint.x * this.bounds.width) / 100,
-      y: (this.rawStartPoint.y * this.bounds.height) / 100
+      y: (this.rawStartPoint.y * this.bounds.height) / 100,
     };
 
     gsap.killTweensOf(this);
@@ -44,23 +44,28 @@ export class HotSpot extends PIXI.Container {
     let circle1 = this.drawCircle({
       radius: this.radius,
       alpha: 1,
-      color: 0xffffff
+      color: 0xffffff,
     });
 
     let circle2 = this.drawCircle({
       radius: this.radius * 0.776,
-      alpha: 1,
-      color: 0xa7e913
+      alpha: 0,
+      color: 0xa7e913,
+      line: {
+        width: 3,
+        color: 0xffffff,
+        alpha: 1,
+      },
     });
 
     let circle3 = this.drawCircle({
       radius: this.radius * 0.405,
       alpha: 1,
-      color: 0x2d2d2d
+      color: 0xa7e913,
     });
 
     //stacking
-    this.innerCircles.addChild(circle1);
+    // this.innerCircles.addChild(circle1);
     this.innerCircles.addChild(circle2);
     this.innerCircles.addChild(circle3);
 
@@ -72,15 +77,25 @@ export class HotSpot extends PIXI.Container {
 
     let outerCircle1 = this.drawCircle({
       radius: this.radius * 2.138,
-      alpha: 0.54,
-      color: 0xffffff
+      alpha: 0,
+      color: 0xffffff,
+      line: {
+        width: 6,
+        color: 0xffffff,
+        alpha: 0.5,
+      },
     });
     outerCircle1.scale.x = outerCircle1.scale.y = 0;
 
     let outerCircle2 = this.drawCircle({
       radius: this.radius * 1.498,
-      alpha: 0.54,
-      color: 0xffffff
+      alpha: 0,
+      color: 0xffffff,
+      line: {
+        width: 6,
+        color: 0xffffff,
+        alpha: 0.75,
+      },
     });
     outerCircle2.scale.x = outerCircle2.scale.y = 0;
 
@@ -99,7 +114,17 @@ export class HotSpot extends PIXI.Container {
     const graphics = new PIXI.Graphics();
 
     // Circle
-    graphics.lineStyle(0); // draw a circle, set the lineStyle to zero so the circle doesn't have an outline
+
+    if (params.line) {
+      graphics.lineStyle(
+        params.line.width,
+        params.line.color,
+        params.line.alpha
+      ); // draw a circle, set the lineStyle to zero so the circle doesn't have an outline
+    } else {
+      graphics.lineStyle(0);
+    }
+
     graphics.beginFill(params.color, params.alpha);
     graphics.drawCircle(0, 0, params.radius);
     graphics.endFill();
@@ -111,30 +136,30 @@ export class HotSpot extends PIXI.Container {
 
   createStateTimelines() {
     this.showTl = gsap.timeline({
-      paused: true
+      paused: true,
     });
 
     this.showTl.to(this.innerCircles.scale, {
       duration: 0.8,
       x: 1,
       y: 1,
-      ease: "back.out"
+      ease: "back.out",
     });
 
     //pulsate
     this.showOuterTl = gsap.timeline({
-      paused: true
+      paused: true,
     });
 
     this.showOuterTl.to(this.outerCircles.scale, {
       duration: 0.5,
       x: 1,
       y: 1,
-      ease: "back.out"
+      ease: "back.out",
     });
 
     this.pulsateTl = gsap.timeline({
-      paused: true
+      paused: true,
     });
 
     this.pulsateTl.to(
@@ -143,7 +168,7 @@ export class HotSpot extends PIXI.Container {
         duration: 1,
         x: 1,
         y: 1,
-        ease: "sine.inOut"
+        ease: "sine.inOut",
       },
       0
     );
@@ -154,7 +179,7 @@ export class HotSpot extends PIXI.Container {
         duration: 1,
         x: 1,
         y: 1,
-        ease: "quint.inOut"
+        ease: "quint.inOut",
       },
       0
     );
@@ -186,7 +211,7 @@ export class HotSpot extends PIXI.Container {
         duration: duration,
         x: destX,
         y: destY,
-        onComplete: this.onMoveComplete.bind(this)
+        onComplete: this.onMoveComplete.bind(this),
       });
     }
   }
